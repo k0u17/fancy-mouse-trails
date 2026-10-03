@@ -8,3 +8,9 @@ wgpu = "30.0.1"
 winit = "0.30.13"
 bytemuck = "1.25.2"
 tray-icon = "0.26.0"
+pollster = "1.0.1"
+anyhow = "1.0.104"
+fxhash = "0.2.1"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging", "Win32_Graphics_Dwm"] }
