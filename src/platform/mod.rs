@@ -2,8 +2,8 @@
 #[path = "windows.rs"]
 mod imp;
 
-#[cfg(not(target_os = "windows"))]
-#[path = "fallback.rs"]
+#[cfg(target_os = "macos")]
+#[path = "macos.rs"]
 mod imp;
 
 pub use imp::Platform;

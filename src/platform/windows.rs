@@ -2,10 +2,11 @@ use std::sync::{
     Arc,
     atomic::{AtomicBool, Ordering},
 };
-use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, WPARAM};
+use windows_sys::Win32::Foundation::{HWND, LPARAM, LRESULT, POINT, WPARAM};
 use windows_sys::Win32::Graphics::Dwm::{DWMWA_TRANSITIONS_FORCEDISABLED, DwmSetWindowAttribute};
 use windows_sys::Win32::UI::Shell::{DefSubclassProc, RemoveWindowSubclass, SetWindowSubclass};
-use windows_sys::Win32::UI::WindowsAndMessaging::WM_DISPLAYCHANGE;
+use windows_sys::Win32::UI::WindowsAndMessaging::{GetCursorPos, WM_DISPLAYCHANGE};
+use winit::dpi::PhysicalPosition;
 use winit::event_loop::ActiveEventLoop;
 use winit::platform::windows::WindowAttributesExtWindows;
 use winit::raw_window_handle::{HasWindowHandle, RawWindowHandle};
@@ -87,6 +88,15 @@ impl Platform {
 
     pub fn take_monitor_changed(&self) -> bool {
         self.changed.swap(false, Ordering::AcqRel)
+    }
+
+    /// Returns the pointer's position in physical desktop coordinates.
+    pub fn cursor_position(&self) -> anyhow::Result<PhysicalPosition<f64>> {
+        let mut point = POINT { x: 0, y: 0 };
+        if unsafe { GetCursorPos(&mut point) } == 0 {
+            anyhow::bail!("GetCursorPos failed");
+        }
+        Ok(PhysicalPosition::new(point.x as f64, point.y as f64))
     }
 }
 
