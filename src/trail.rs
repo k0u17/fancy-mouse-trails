@@ -1,17 +1,14 @@
+use crate::AppRenderer;
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
-use wgpu::util::DeviceExt;
-use winit::dpi::PhysicalPosition;
-use crate::AppRenderer;
 
-trait Trail {
-
-    fn update(&mut self);
+pub trait Trail {
+    fn update(&mut self, renderer: &AppRenderer);
 
     fn render(&self, pass: &mut wgpu::RenderPass);
 }
 
-struct Ribbon {
+pub struct Ribbon {
     buffer: wgpu::Buffer,
     capacity: usize,
     trajectory: VecDeque<SplinePoint>,
@@ -26,11 +23,11 @@ struct SplinePoint {
     control_second: [f64; 2]
 }
 
-const EXPIRATION_DURATION: Duration = Duration::from_secs(1);
+const RIBBON_DURATION: Duration = Duration::from_secs(1);
 
 impl Ribbon {
 
-    fn append(&mut self, renderer: &AppRenderer, pos_x: f64, pos_y: f64) -> anyhow::Result<()> {
+    pub fn append(&mut self, renderer: &AppRenderer, pos_x: f64, pos_y: f64) -> anyhow::Result<()> {
         let now = Instant::now();
         self.trajectory.push_back(SplinePoint {
             control_first: [pos_x, pos_y],
@@ -39,7 +36,7 @@ impl Ribbon {
         });
         self.trajectory_timestamps.push_back(now);
         while let Some(timestamp) = self.trajectory_timestamps.front() {
-            if now.duration_since(*timestamp) > EXPIRATION_DURATION {
+            if now.duration_since(*timestamp) > RIBBON_DURATION {
                 self.trajectory.pop_front();
                 self.trajectory_timestamps.pop_front();
             } else {
@@ -75,4 +72,26 @@ impl Ribbon {
         }
         Ok(())
     }
+
+
+    fn add_point(&mut self, pos_x: f64, pos_y: f64) {
+        if self.trajectory.is_empty() {
+            self.trajectory.push_back(SplinePoint {
+                control_first: [pos_x, pos_y],
+                position: [pos_x, pos_y],
+                control_second: [pos_x, pos_y]
+            });
+            return;
+        }
+        let SplinePoint {
+            control_first: ctrl1,
+            position: p,
+            control_second: ctrl2
+        } = self.trajectory.back().unwrap();
+        if ctrl1 == p && ctrl2 == p {
+
+        }
+
+    }
+
 }
