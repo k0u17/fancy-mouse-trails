@@ -96,7 +96,14 @@ impl Ribbon {
                 }
             },
             Some(pending) => {
+                if self.trajectory.is_empty() {
+                    self.trajectory.push_back(TrailPoint::new(pending, 0));
+                    self.pending = Some([pos_x, pos_y]);
+                } else if (self.should_extrapolate_start) {
 
+                } else {
+
+                }
             },
         }
     }
