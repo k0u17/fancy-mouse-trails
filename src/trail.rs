@@ -1,6 +1,5 @@
 use crate::AppRenderer;
 use std::collections::VecDeque;
-use std::ops::Mul;
 use std::time::{Duration, Instant};
 use crate::vec2d::Vec2d;
 
@@ -99,6 +98,9 @@ impl Ribbon {
                 }
             },
             Some(pending) => {
+                if (pos - pending).length_squared() < EPSILON {
+                    return;
+                }
                 if let Some(TrailPoint { pos: prev, .. }) = self.trajectory.back() {
                     let first_point = if self.should_extrapolate || self.trajectory.len() < 2 {
                         self.should_extrapolate = false;
@@ -106,7 +108,7 @@ impl Ribbon {
                     } else {
                         self.trajectory.get(self.trajectory.len() - 2).unwrap().pos
                     };
-                } else if (pos - pending).length_squared() > EPSILON {
+                } else {
                     self.trajectory.push_back(TrailPoint::new(pending, 0));
                     self.pending = Some(pos);
                     self.should_extrapolate = true;
