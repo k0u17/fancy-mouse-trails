@@ -1,6 +1,8 @@
 use crate::AppRenderer;
 use std::collections::VecDeque;
+use std::ops::Mul;
 use std::time::{Duration, Instant};
+use crate::vec2d::Vec2d;
 
 pub trait Trail {
     fn update(&mut self, renderer: &AppRenderer);
@@ -9,13 +11,13 @@ pub trait Trail {
 }
 
 struct TrailPoint {
-    pos: [f64; 2],
+    pos: Vec2d,
     vertices: usize, // the number of vertices in the discretized curve this point accounts for
     expiration: Instant
 }
 
 impl TrailPoint {
-    fn new(pos: [f64; 2], vertices: usize) -> Self {
+    fn new(pos: Vec2d, vertices: usize) -> Self {
         Self {
             pos,
             vertices,
@@ -30,15 +32,16 @@ pub struct Ribbon {
     trajectory: VecDeque<TrailPoint>,
     // the last appended point, which there's no curve segment for yet,
     // because catmull-rom requires the next point to compute the curve
-    pending: Option<[f64; 2]>,
+    pending: Option<Vec2d>,
     // whether to linearly extrapolate the first control point for a catmull-rom curve segment
     // instead of using the third previous point.
-    should_extrapolate_start: bool,
+    should_extrapolate: bool,
     curve: VecDeque<[f64; 2]>
 }
 
 
 const RIBBON_DURATION: Duration = Duration::from_secs(1);
+const EPSILON: f64 = 1e-6;
 
 impl Ribbon {
 
@@ -85,27 +88,30 @@ impl Ribbon {
     // }
 
 
-    fn add_point(&mut self, pos_x: f64, pos_y: f64) {
+    fn add_point(&mut self, pos: Vec2d) {
         match self.pending {
             None => {
                 if self.trajectory.is_empty() {
-                    self.trajectory.push_back(TrailPoint::new([pos_x, pos_y], 0));
+                    self.trajectory.push_back(TrailPoint::new(pos, 0));
                 } else {
-                    self.pending = Some([pos_x, pos_y]);
-                    self.should_extrapolate_start = true;
+                    self.pending = Some(pos);
+                    self.should_extrapolate = true;
                 }
             },
             Some(pending) => {
-                if self.trajectory.is_empty() {
+                if let Some(TrailPoint { pos: prev, .. }) = self.trajectory.back() {
+                    let first_point = if self.should_extrapolate || self.trajectory.len() < 2 {
+                        self.should_extrapolate = false;
+                        2.0 * *prev - pending
+                    } else {
+                        self.trajectory.get(self.trajectory.len() - 2).unwrap().pos
+                    };
+                } else if (pos - pending).length_squared() > EPSILON {
                     self.trajectory.push_back(TrailPoint::new(pending, 0));
-                    self.pending = Some([pos_x, pos_y]);
-                } else if (self.should_extrapolate_start) {
-
-                } else {
-
+                    self.pending = Some(pos);
+                    self.should_extrapolate = true;
                 }
-            },
+            }
         }
     }
-
 }

@@ -1,5 +1,6 @@
 mod platform;
 mod trail;
+mod vec2d;
 
 use anyhow::Context;
 use fxhash::{FxHashMap, FxHashSet};
